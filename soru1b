@@ -1,0 +1,94 @@
+DELAY_INTERVAL	EQU	0x30c008; 1 saniye gecikme icin hex sayi bununla oynayarak ihtiyaciniz olan delayi elde edebilirsiniz.(16Mhz saat)
+;Mesela 0,5 saniye gecikme icin 0x186004 yazabilirsiniz (yarisi)
+RCC_AHB1ENR		EQU	0x40023830	;Bölgesel Saat kontrolü saglayan register (includes GPIO)
+GPIOD_MODER		EQU	0x40020C00	;pinlerin karakterini belirleyen register her pin icin 2 bit gerekiyor 
+GPIOD_OTYPER	EQU	0x40020C04	; hedef pinin push-pull veya open-drain modunu belirleyen yazmac
+GPIOD_OSPEEDR	EQU 0x40020C08	;Pinin degisim hizini belirleyen yazmac
+GPIOD_PUPDR		EQU	0x40020C0C	;GPIO pininin pull-up/pull-down modunu belirleyen yazmac
+GPIOD_ODR		EQU	0x40020C14	;GPIO pin cikis verisi
+; fonksiyonlari baska dosyadan cagiracak export islemi
+	EXPORT SystemInit 
+	EXPORT __main
+
+	AREA	MYCODE, CODE, READONLY
+	
+;Ozetle yapilan ayarlamalar:
+; * GPIO Saatin aktive edilmesi 
+; Foyde anlatilan 4 lede karsilik gelen pinler icin ayarlar (GPIO-D Pinleri 12 den 15 e):
+; ** Pin tiplerinin digital cikis olarak belirlenmesi
+; ** Push-pull modunda olmalari (Default ayar)
+; ** Hiz belirlenmesi (yavas)
+; ** Pull-up aktive/deaktive edilmesi (deaktive)
+; **************************
+
+SystemInit FUNCTION
+
+	; GPIO Saatin aktive edilmesi 
+	LDR		R1, =RCC_AHB1ENR	; Saat aktivasyonu icin kullanilacak yazmac adresi r1e alindi
+	LDR		R0, [R1]			;R1 deki adres icerigini R0 kopyala
+	ORR.W 	R0, #0x08			;Bitwise or islemi
+	STR		R0, [R1]			;Store R0 veriyi  R1 adresine yaz
+
+	; Pin tiplerinin digital cikis olarak belirlenmesi
+	LDR		R1, =GPIOD_MODER	;Her pin icin 2 bit tutan GPIOD_MODER in 24-31 bitleri ile PD12-15 arasini
+	LDR		R0, [R1]	; 01 yaparak hedef pinlerin cikis olarak ayarlamasi yapiliyor.		
+	ORR.W 	R0, #0x55000000		;
+	AND.W	R0, #0x55FFFFFF		;
+	STR		R0, [R1]
+
+	; Pin tiplerinin push-pull modunda olmalari (Default ayar)
+	LDR		R1, =GPIOD_OTYPER	; Push-Pull Modunu belirleyen pin 0 yapildi. 1 olsaydi open-drain olacakti.
+	LDR		R0, [R1]
+	AND.W 	R0, #0xFFFF0FFF	
+	STR		R0, [R1]
+	
+	; Pin hizinin yavas moda ayarlanmasi
+	LDR		R1, =GPIOD_OSPEEDR	;her pin icin 2 bit kullanan so bits 24 to 31 control pins 12 to 15
+	LDR		R0, [R1]
+	AND.W 	R0, #0x00FFFFFF		;Hedef pinler için kullanilan 2'li bit gruplarina '00' atayarak yavas moda alindi.
+	STR		R0, [R1]	
+	
+	; Pinlerin Pull-up disable edilmesi
+	LDR		R1, =GPIOD_PUPDR	;her pin icin 2 bit kullanan so bits 24 to 31 control pins 12 to 15
+	LDR		R0, [R1]
+	AND.W	R0, #0x00FFFFFF		;24 ve 31 pinleri 0 larayarak  pullup/pulldown disable yapiyoruz.
+	STR		R0, [R1]
+
+	BX		LR					;Fonksiyondan cikis
+	
+	ENDFUNC
+;PD12 Sari led - kablo karsinizdayken sol tarafta kalan - mavi butonun yanindaki
+;PD13 Turuncu led- kabloya en yakin olan - Merkezdeki ARM cipinin altindaki led
+;PD14 Kirmizi led- kablo karsinizdayken sag tarafta kalan - siyah butonun yanindaki
+;PD15 Mavi led - olan kablodan en uzak olan led -	
+__main FUNCTION
+	;F000 daki F in konumundaki degere göre lamba yakma islemi yapar
+	MOV R7,#0x1000
+again
+	;Ledleri yakiyoruz.
+	LDR R1,=GPIOD_ODR
+	LDR R0,[R1]
+	ORR.W R0,R7
+	ADD R7,R7,R7
+	STR R0,[R1]
+	;Simdi ise delay 1sn
+	LDR R2,=DELAY_INTERVAL
+delay1
+	CBZ R2, turnOFF
+	SUBS R2,R2,#2
+	B delay1
+turnOFF
+	LDR R1,=GPIOD_ODR
+	LDR R0,[R1]
+	AND.W R0,#0xFFFF0FFF
+	STR R0,[R1]
+	;Simdi ise delay 1sn
+	LDR R2,=DELAY_INTERVAL
+	
+	CMP R7,#0x10000
+	BNE Atla
+	MOV R7,#0x1000
+Atla	
+	b again
+	ENDFUNC
+	END
