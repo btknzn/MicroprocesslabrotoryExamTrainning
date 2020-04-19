@@ -1,0 +1,34 @@
+		EXPORT SystemInit;1
+		EXPORT __main;2
+	
+
+		AREA MYCODE, CODE, READONLY;
+SystemInit FUNCTION;
+		ENDFUNC
+	
+__main FUNCTION
+		MOV R1,#0; TOPLAMI TUTACAK SAYIMIZ
+		MOV R2,#2; O anki sayiyi 2 arttiracak
+		MOV R3,#1; ilk sayi
+		ADD R1,R1,R3;1
+		ADD R3,R3,R2;2. sayimiz 3
+		ADD R1,R1,R3; 1,3 toplami 4
+		ADD R3,R3,R2;3. sayimiz 5
+		ADD R1,R1,R3; 1,3,5 toplami 
+		ADD R3,R3,R2;2. sayimiz 7
+		ADD R1,R1,R3; 1,3,5,7 toplami 
+		ADD R3,R3,R2;2. sayimiz 9
+		ADD R1,R1,R3; 1,3,5,7,9 toplami 
+		ADD R3,R3,R2;2. sayimiz 11
+		ADD R1,R1,R3; 1,3,5,7,9,11 toplami 
+		ADD R3,R3,R2;2. sayimiz 13
+		ADD R1,R1,R3; 1,3,5,7,9,11,13 toplami 
+		ADD R3,R3,R2;2. sayimiz 15
+		ADD R1,R1,R3; 1,3,5,7,9,11,13,15 toplami 
+		ADD R3,R3,R2;2. sayimiz 17
+		ADD R1,R1,R3; 1,3,5,7,9,11,13,15,17 toplami 
+		ADD R3,R3,R2;2. sayimiz 19
+		ADD R1,R1,R3; 1,3,5,7,9,11,13,15,19 toplami 100	
+HERE 	B HERE
+		ENDFUNC
+		END
